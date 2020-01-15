@@ -59,18 +59,6 @@ int getFirstFreeUserSlot() {
     return -1;
 }
 
-
-void updateUsers(){
-for (int i=0;i<NUMBER_OF_USERS;i++){
-    for (int j=0; j<NUMBER_OF_USERS; j++) {
-        if ((users[j].socket != -1)&&(users[i].socket != -1)) {
-           send(users[i].socket, users[j].name, 1024,0);
-            cout<<"wyslano do: "<<users[i].name <<users[j].name <<endl;
-}
-}
-}
-}
-
 void *Thread_Listening(void *t_data) {
         pthread_detach(pthread_self());
         struct thread_data_t *th_data = (struct thread_data_t*)t_data;
@@ -153,7 +141,7 @@ void handleConnection(int connection_socket_descriptor) {
         t_data1->socket = connection_socket_descriptor;
         t_data1->user_counter = user_counter;
         if (pthread_create(&thread1, NULL, Thread_Listening, (void *)t_data1)) {
-            printf("Błąd przy próbie utworzenia wątku\n");
+            printf("Błąd - tworzenie wątku\n");
             exit(1);
         };
     } else close(connection_socket_descriptor);
@@ -186,18 +174,18 @@ int main(int argc, char*argv[]) {
     server_address.sin_port = htons(port_num);
     server_socket_descriptor = socket(AF_INET, SOCK_STREAM, 0);
     if (server_socket_descriptor < 0) {
-        fprintf(stderr, "%s: Błąd przy próbie utworzenia gniazda..\n", argv[0]);
+        fprintf(stderr, "%s: Błąd - tworzenie socketu\n", argv[0]);
         exit(1);
     }
     setsockopt(server_socket_descriptor, SOL_SOCKET, SO_REUSEADDR, (char*)&reuse_addr_val, sizeof(reuse_addr_val));
 
     if (bind(server_socket_descriptor, (struct sockaddr*)&server_address, sizeof(struct sockaddr)) < 0){
-        fprintf(stderr, "%s: Błąd przy próbie dowiązania adresu IP i numeru portu do gniazda.\n", argv[0]);
+        fprintf(stderr, "%s: Błąd - dowiązanie adresu i portu do socketu\n", argv[0]);
         exit(1);
     }
 
     if (listen(server_socket_descriptor, QUEUE_SIZE) < 0){
-        fprintf(stderr, "%s: Błąd przy próbie ustawienia wielkości kolejki.\n", argv[0]);
+        fprintf(stderr, "%s: Błąd kolejka\n", argv[0]);
         exit(1);
     }
 
@@ -206,7 +194,7 @@ int main(int argc, char*argv[]) {
     while(1) {
         connection_socket_descriptor = accept(server_socket_descriptor, NULL, NULL);
         if (connection_socket_descriptor < 0) {
-            fprintf(stderr, "%s: Błąd przy próbie utworzenia gniazda dla połączenia.\n", argv[0]);
+            fprintf(stderr, "%s: Błąd przy tworzeniu socketu\n", argv[0]);
             exit(1);
         }
 
