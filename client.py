@@ -67,8 +67,6 @@ def loginClick(event, usernameguess,window):
 	global user
 	global conversations
 	user = User(usernameguess.get())
-	#kontakty = User("Kontakty")
-	#conversations.append(kontakty)
 	sock.send(message.encode('utf-8'))
 	print("zalogowano jako" + message[1:-1])
 	window.destroy()
