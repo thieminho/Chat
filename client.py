@@ -1,6 +1,5 @@
 import socket, sys, threading, tkinter as tk, time, queue
 from tkinter import BOTH, END, LEFT
-from random import randint
 from threading import Thread
 import time
 
