@@ -18,12 +18,8 @@
 using namespace std;
 
 #define QUEUE_SIZE 5
-
 #define NUMBER_OF_USERS 32
-#define NUMBER_OF_MESSAGES 64
-
 #define NAME_LENGTH 1024
-#define MESSAGE_LENGTH 256
 
 
 
@@ -33,8 +29,6 @@ struct user_t {
     int socket;
     char name[NAME_LENGTH];
 };
-
-
 
 struct thread_data_t {
     int socket;
@@ -51,8 +45,8 @@ void deleteUser(int user_id) {
         memset(users[user_id].name, 0, sizeof(users[user_id].name));
 }
 }
-
-int getFirstFreeUserSlot() {
+//pierwszy wolny socket
+int freesocket() {
     for (int i=0; i<NUMBER_OF_USERS; i++)
         if (users[i].socket == -1)
             return i;
@@ -83,7 +77,7 @@ void *Thread_Listening(void *t_data) {
                     while((*th_data).incoming_message[w]!=':')
                     {
                       to[v] = (*th_data).incoming_message[w];
-                      cout<<(*th_data).incoming_message[w]<<endl;
+                      //cout<<(*th_data).incoming_message[w]<<endl;
                       w++;
                       v++;
                     }
@@ -131,7 +125,7 @@ pthread_mutex_unlock(&mutex); //wyjscie z sekcji krytycznej
 
 void handleConnection(int connection_socket_descriptor) {
     pthread_mutex_lock(&mutex);
-    int user_counter = getFirstFreeUserSlot();
+    int user_counter = freesocket();
     if (user_counter != -1) {
         users[user_counter].socket = connection_socket_descriptor;
         cout<<"Nowy uzytkownik: "<<user_counter<<" "<<NUMBER_OF_USERS-1<<endl;
@@ -159,7 +153,7 @@ int main(int argc, char*argv[]) {
     char reuse_addr_val = 1;
     struct sockaddr_in server_address;
 
-    int i, msg_num = 0;
+    int i;
     //numeru portu z argv[1]
     if (argc < 2) {
         printf("Port: \n");

@@ -1,4 +1,4 @@
-import socket, sys, threading, tkinter as tk, time,queue
+import socket, sys, threading, tkinter as tk, time, queue
 from tkinter import BOTH, END, LEFT
 from random import randint
 from threading import Thread
@@ -39,7 +39,7 @@ def connectClick(event, hostguess, portguess, windowhp):
     PORT = int(portguess.get())
     HOST = hostguess.get()
     windowhp.destroy()
-
+#pierwsze okienko z hostem i portem
 windowhp = tk.Tk()
 windowhp.title = ("Host i Port")
 windowhp.minsize(300,200)
@@ -62,27 +62,19 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect((HOST, PORT))
 
 
-
-
 def loginClick(event, usernameguess,window):
 	message = '*' + usernameguess.get() +'$'
 	global user
 	global conversations
 	user = User(usernameguess.get())
-	kontakty = User("Kontakty")
-	#julia = User("Julia")
-	#milosz = User("Milosz")
-	conversations.append(kontakty)
-	#conversations.append(julia)
-	#conversations.append(milosz)
-	#print(conversations)
+	#kontakty = User("Kontakty")
+	#conversations.append(kontakty)
 	sock.send(message.encode('utf-8'))
 	print("zalogowano jako" + message[1:-1])
-	#msg = sock.recv(1024)
-	#msg = msg.decode("utf-8")
-	#print("co dostalo: "+msg)
 	window.destroy()
 
+
+#drugie okienko z logowaniem
 window = tk.Tk()
 window.title = ("Logowanie")
 usernametext = tk.Label(window, text="Login:")
@@ -93,44 +85,6 @@ usernametext.pack()
 usernameguess.pack()
 loginButton.pack()
 window.mainloop()
-
-
-def receive():
-    while True:
-        #msg = ""
-        sock.settimeout(0.5)
-        try:
-            msg = sock.recv(1024)
-            msg = msg.decode("utf-8", 'ignore')
-        except socket.timeout as e:
-            msg = ''
-        sock.settimeout(None)
-        #msg = sock.recv(1024)
-        #msg = msg.decode('utf-8', 'ignore')
-        if len(msg) > 0:
-            global conversations
-            print('Otrzymano wiadomosc: ', msg)
-            if msg[0]=='#': #zwykla wiadomosc
-                msgtemp = msg.split('$')[0]
-                msgtemp = msgtemp[1:]
-                f,t,m = msgtemp.split(':') #from, to, message
-                print(f,t,m)
-                if t == user.nick: #sprawdzenie czy wiadomosc jest skierowana do zalogowanego uzytkownika
-	                for c in conversations:
-	                    if f == c.nick:
-	                        c.messages.append(f+':'+t+':'+m) #dodanie wiadomosci do listy wiadomosci okreslonego kontaktu
-	                if f == activechat: #wyswietlenie wiadomosci jesli jest ona skierowana do aktualnie wyswietlanego kontaktu 
-	                    chat.configure(state = "normal")
-	                    chat.insert('end', f+': '+m+ "\n")
-	                    chat.configure(state = "disabled")
-            if msg[0]=='*': #wiadomosc z nowym kontaktem
-                msgtemp = msg.split('$')[0]
-                #msgtemp = msg[1:-2]
-                msgtemp=msgtemp[1:]
-                print("dolaczyl " + msgtemp +"\n")
-                newcontact = User(msgtemp)
-                conversations.append(newcontact)
-                usersPanel.insert(tk.END, newcontact.nick)
 
 
 
@@ -177,7 +131,7 @@ def CurSelet(event): #po zaznaczeniu na liscie uzytkownikow
 			break
 	print(value, activechat)
 
-
+#glowne okienko
 root = tk.Tk()
 root.title("Messenger")
 root.minsize(600,400)
@@ -208,7 +162,7 @@ buttonSend.bind("<Button-1>", lambda event: sendMessageClick(event,textField, ch
 
 #usersPanel
 usersPanel= tk.Listbox(mainFrame)
-#usersPanel.insert(1, "ALL")
+usersPanel.insert(1, "KONTAKTY")
 usersPanel.grid(column=2, row=0, sticky=tk.N + tk.S + tk.W + tk.E)
 #global conversations
 for c in conversations:
@@ -223,6 +177,48 @@ buttonExit["text"] = "Zamknij"
 buttonExit["background"] = "gray"
 buttonExit.grid(column=2, row=2, sticky=tk.N + tk.S + tk.W + tk.E)
 buttonExit.bind("<Button-1>", exitClick)
+
+
+
+
+def receive():
+    while True:
+        #msg = ""
+        sock.settimeout(0.5)
+        try:
+            msg = sock.recv(1024)
+            msg = msg.decode("utf-8", 'ignore')
+        except socket.timeout as e:
+            msg = ''
+        sock.settimeout(None)
+        #msg = sock.recv(1024)
+        #msg = msg.decode('utf-8', 'ignore')
+        if len(msg) > 0:
+            global conversations
+            print('Otrzymano wiadomosc: ', msg)
+            if msg[0]=='#': #zwykla wiadomosc
+                msgtemp = msg.split('$')[0]
+                msgtemp = msgtemp[1:]
+                f,t,m = msgtemp.split(':') #from, to, message
+                print(f,t,m)
+                if t == user.nick: #sprawdzenie czy wiadomosc jest skierowana do zalogowanego uzytkownika
+	                for c in conversations:
+	                    if f == c.nick:
+	                        c.messages.append(f+':'+t+':'+m) #dodanie wiadomosci do listy wiadomosci okreslonego kontaktu
+	                if f == activechat: #wyswietlenie wiadomosci jesli jest ona skierowana do aktualnie wyswietlanego kontaktu 
+	                    chat.configure(state = "normal")
+	                    chat.insert('end', f+': '+m+ "\n")
+	                    chat.configure(state = "disabled")
+            if msg[0]=='*': #wiadomosc z nowym kontaktem
+                msgtemp = msg.split('$')[0]
+                #msgtemp = msg[1:-2]
+                msgtemp=msgtemp[1:]
+                print("dolaczyl " + msgtemp +"\n")
+                newcontact = User(msgtemp)
+                conversations.append(newcontact)
+                usersPanel.insert(tk.END, newcontact.nick)
+
+
 
 receive_thread = Thread(target=receive)
 receive_thread.start()
