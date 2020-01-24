@@ -12,7 +12,6 @@
 #include <time.h>
 #include <pthread.h>
 #include<iostream>
-#include<vector>
 #include <string>
 
 using namespace std;
@@ -22,9 +21,7 @@ using namespace std;
 #define NAME_LENGTH 1024
 
 
-
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-
 struct user_t {
     int socket;
     char name[NAME_LENGTH];
@@ -32,7 +29,7 @@ struct user_t {
 
 struct thread_data_t {
     int socket;
-    int user_counter; 
+    int user_counter;
     char incoming_message[1024];
     int bytes_read;
 };
@@ -56,11 +53,21 @@ int freesocket() {
 void *Thread_Listening(void *t_data) {
         pthread_detach(pthread_self());
         struct thread_data_t *th_data = (struct thread_data_t*)t_data;
+        char buf[128];
+         int a, full;
         while(1) {
             memset((*th_data).incoming_message, 0, sizeof((*th_data).incoming_message));
-            (*th_data).bytes_read = recv((*th_data).socket, (*th_data).incoming_message,sizeof((*th_data).incoming_message),0);
-
-            if ((*th_data).bytes_read > 0) {
+            //(*th_data).bytes_read = recv((*th_data).socket, (*th_data).incoming_message,sizeof((*th_data).incoming_message),0);
+            full = 0;
+            		do{
+            			memset(buf, 0, sizeof(buf));
+            			a = read((*th_data).socket, buf, sizeof(buf));
+            			for(int j = full; j < full + a; j++) (*th_data).incoming_message[j] = buf[j - full];
+            			full += a;
+            		}
+            		while(buf[a - 1] != '$' && a != 0);
+            		(*th_data).bytes_read = full;
+            if ((*th_data).bytes_read > 0) { // +0 rozlaczenie
 
                 if ((*th_data).incoming_message[0] == '#') { //wiadomosc #od:do:wiadomosc$
                     pthread_mutex_lock(&mutex); //sekcja krytyczna
@@ -85,7 +92,7 @@ void *Thread_Listening(void *t_data) {
                     cout<<"to "<<to<<endl; //"to" to do z dodanym $ przed i # za, zeby sie zgadzalo z forma zapisana w users
                     for (int i=0; i<NUMBER_OF_USERS; i++) { //znalezienie "to" w users i wyslanie do niego wiadomosci
                         if (strcmp(to,users[i].name)==0) {
-                            send(users[i].socket, (*th_data).incoming_message, 1024,0);
+                            send(users[i].socket, (*th_data).incoming_message, sizeof((*th_data).incoming_message),0);
                      }
                    }
                  }
@@ -97,18 +104,15 @@ void *Thread_Listening(void *t_data) {
                             for(int k=0;k<(*th_data).bytes_read;k++){
                             users[i].name[k]=(*th_data).incoming_message[k];} //wpisanie nazwy nowego uzytkownika do users
                             for (int j=0; j<NUMBER_OF_USERS; j++) {
-                             if (users[j].socket != -1 && users[j].socket != users[i].socket ) { //wyslanie wiadomosci z nowym uzytkownikiem do starych klientow i 
+                             if (users[j].socket != -1 && users[j].socket != users[i].socket ) { //wyslanie wiadomosci z nowym uzytkownikiem do starych klientow i
 //nazw starych uzytkownikow do nowych, zeby wszyscy mieli siebie w kontaktach
                                 cout<<"wyslano do starych "<<(*th_data).incoming_message<<endl;
-                                send(users[j].socket, (*th_data).incoming_message, 1024,0);
+                                send(users[j].socket, (*th_data).incoming_message, sizeof((*th_data).incoming_message),0);
                                 cout<<"wyslano do nowego "<<users[j].name<<endl;
-                                send(users[i].socket, users[j].name, 1024,0);
+                                send(users[i].socket, users[j].name, sizeof(users[j].name),0);
                      }
                    }
                   }
-
-
-
 }
 //wyswietlenie w terminalu uzytkownikow z users, zeby sprawdzic czy dziala poprawnie
 for(int d=0;d<=NUMBER_OF_USERS;d++){
@@ -116,8 +120,13 @@ cout<<"w tab sa "<<users[d].name<<endl;
 }
 }
         }
+        else if(((*th_data).bytes_read) == 0){
+          close((*th_data).socket);
+          deleteUser((*th_data).user_counter);
+        }
 pthread_mutex_unlock(&mutex); //wyjscie z sekcji krytycznej
     }
+            deleteUser((*th_data).user_counter);
             free(t_data);
             pthread_exit(NULL);
     }
@@ -182,21 +191,15 @@ int main(int argc, char*argv[]) {
         fprintf(stderr, "%s: Błąd kolejka\n", argv[0]);
         exit(1);
     }
-
     for (i=0; i<NUMBER_OF_USERS; i++) deleteUser(i);
-
     while(1) {
         connection_socket_descriptor = accept(server_socket_descriptor, NULL, NULL);
         if (connection_socket_descriptor < 0) {
             fprintf(stderr, "%s: Błąd przy tworzeniu socketu\n", argv[0]);
             exit(1);
         }
-
         handleConnection(connection_socket_descriptor);
-
     }
-
     close(server_socket_descriptor);
     return(0);
-
 }

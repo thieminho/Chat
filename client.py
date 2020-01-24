@@ -25,7 +25,7 @@ class Message:
         self.message = message
 
     #wysyła do serwera wiadomość w formie #od:do:wiadomosc$
-    def send(self):
+    def send(self):#dlugosc nicku, nick, dlugosc wiaodmosci, wiadomosc
         self.msg = "#" + str(self.ffrom) + ":" +str(self.to) + ":" + str(self.message) + "$"
         #print(self.msg)
         sock.send(self.msg.encode('utf-8'))
@@ -110,7 +110,7 @@ def updatelist():
 		usersPanel.insert(tk.END, c.nick)
 		usersPanel.select_set(0)
 
-def CurSelet(event): #po zaznaczeniu na liscie uzytkownikow
+def selected(event): #po zaznaczeniu na liscie uzytkownikow
 	value=str((usersPanel.get(usersPanel.curselection())))
 	for c in conversations:
 		if value == c.nick:
@@ -166,7 +166,7 @@ for c in conversations:
 	usersPanel.insert(tk.END, c.nick)
 usersPanel.select_set(0)
 target = usersPanel.get(usersPanel.curselection())
-usersPanel.bind('<<ListboxSelect>>',CurSelet)
+usersPanel.bind('<<ListboxSelect>>',selected)
 
 #ExitButton
 buttonExit = tk.Button(mainFrame)
@@ -176,20 +176,33 @@ buttonExit.grid(column=2, row=2, sticky=tk.N + tk.S + tk.W + tk.E)
 buttonExit.bind("<Button-1>", exitClick)
 
 
-
+def receive1():
+    full = '.'
+    msg = '.'
+    while full[-1] != '$':
+        msg = sock.recv(128)
+        #print("msg w receive: " + msg)
+        msg = msg.decode("utf-8")
+        #print("msg w receive: " + msg)
+        full += msg.split('\0')[0]
+        #print("full while: " + full)
+    print("full: " + full)
+    return full[1:]
 
 def receive():
     while True:
-        #msg = ""
         sock.settimeout(0.5)
         try:
-            msg = sock.recv(1024)
-            msg = msg.decode("utf-8", 'ignore')
+            received = receive1()
+            #msg = sock.recv(1024)
+            #msg = msg.decode("utf-8", 'ignore')
         except socket.timeout as e:
-            msg = ''
+            received = ''
         sock.settimeout(None)
         #msg = sock.recv(1024)
         #msg = msg.decode('utf-8', 'ignore')
+        msg = received
+        print("msg = received: " + msg)
         if len(msg) > 0:
             global conversations
             print('Otrzymano wiadomosc: ', msg)
@@ -202,7 +215,7 @@ def receive():
 	                for c in conversations:
 	                    if f == c.nick:
 	                        c.messages.append(f+':'+t+':'+m) #dodanie wiadomosci do listy wiadomosci okreslonego kontaktu
-	                if f == activechat: #wyswietlenie wiadomosci jesli jest ona skierowana do aktualnie wyswietlanego kontaktu 
+	                if f == activechat: #wyswietlenie wiadomosci jesli jest ona skierowana do aktualnie wyswietlanego kontaktu
 	                    chat.configure(state = "normal")
 	                    chat.insert('end', f+': '+m+ "\n")
 	                    chat.configure(state = "disabled")
